@@ -468,6 +468,7 @@ namespace Microsoft.NodejsTools.Classifier {
                 case JSToken.This:
                 case JSToken.Void:
                 case JSToken.TypeOf:
+                case JSToken.Require:
                 case JSToken.Delete:
                 case JSToken.Case:
                 case JSToken.Catch:

@@ -150,7 +150,8 @@ namespace Microsoft.NodejsTools.Parsing
                     new JSKeyword(JSToken.Private, "private", 
                         new JSKeyword(JSToken.Protected, "protected"))));
             // r
-            keywords['r' - 'a'] = new JSKeyword(JSToken.Return, "return");
+            keywords['r' - 'a'] = new JSKeyword(JSToken.Return, "return",
+                                    new JSKeyword(JSToken.Require, "require"));
             // s
             keywords['s' - 'a'] = new JSKeyword(JSToken.Set, "set",
                 new JSKeyword(JSToken.Super, "super", 

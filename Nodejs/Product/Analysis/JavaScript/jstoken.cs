@@ -137,6 +137,7 @@ namespace Microsoft.NodejsTools.Parsing
         Extends,
         Import,
         Super,
+        Require,
 
         // ECMA strict reserved words
         Implements,
