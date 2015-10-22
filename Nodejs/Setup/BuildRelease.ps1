@@ -485,9 +485,9 @@ try {
             if (-not $skipbuild) {
                 $target_msbuild_options = msbuild-options $i
                 if (-not $skipclean) {
-                    msbuild /t:Clean $global_msbuild_options $target_msbuild_options $build_project
+                    & "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" /t:Clean $global_msbuild_options $target_msbuild_options $build_project
                 }
-                msbuild $global_msbuild_options $target_msbuild_options /fl /flp:logfile=$($i.logfile) $build_project
+                & "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" $global_msbuild_options $target_msbuild_options /fl /flp:logfile=$($i.logfile) $build_project
 
                 if (-not $?) {
                     Write-Error "Build failed: $($i.VSName) $config"
@@ -537,7 +537,7 @@ try {
                 submit_symbols "$project_name$spacename" "$buildnumber $($i.VSName) $config" "symbols" $i.symboldir $symbol_contacts
 
                 $target_msbuild_options = msbuild-options $i
-                msbuild $global_msbuild_options $target_msbuild_options `
+                & "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" $global_msbuild_options $target_msbuild_options `
                     /fl /flp:logfile=$($i.signed_logfile) `
                     /p:SignedBinariesPath=$($i.signed_bindir) `
                     /p:RezipVSIXFiles=true `

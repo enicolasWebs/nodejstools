@@ -1768,7 +1768,7 @@ namespace Microsoft.NodejsTools.Parsing
 
             return continueNode;
         }
-
+        
         //---------------------------------------------------------------------------------------
         // ParseBreakStatement
         //
@@ -4567,6 +4567,7 @@ namespace Microsoft.NodejsTools.Parsing
                 // always allowed
                 case JSToken.Get: return "get";
                 case JSToken.Set: return "set";
+                case JSToken.Require: return "require";
 
                 // not in strict mode
                 case JSToken.Implements: return "implements";
@@ -4782,6 +4783,7 @@ namespace Microsoft.NodejsTools.Parsing
                                                                                            JSToken.If,
                                                                                            JSToken.For,
                                                                                            JSToken.Do,
+                                                                                           JSToken.Require,
                                                                                            JSToken.While,
                                                                                            JSToken.With,
                                                                                            JSToken.Switch,
