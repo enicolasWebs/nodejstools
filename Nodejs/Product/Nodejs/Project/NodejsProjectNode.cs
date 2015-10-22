@@ -122,7 +122,9 @@ namespace Microsoft.NodejsTools.Project {
                     }
                 }
                 var fileNode = DelayedAnalysisQueue.Dequeue();
-                fileNode.Analyze();
+                if (fileNode != null) {
+                    fileNode.Analyze();
+                }
             }
         }
 
@@ -140,12 +142,14 @@ namespace Microsoft.NodejsTools.Project {
         private void RestartFileSystemWatcherTimer() {
             lock (_idleNodeModulesLock) {
                 _isIdleNodeModules = false;
-            }
 
-            // The cooldown time here is longer than the cooldown time we use in NpmController.
-            // This gives the Npm component ample time to build up the npm node tree,
-            // so that we can query it later for perf optimizations.
-            _idleNodeModulesTimer.Change(3000, Timeout.Infinite);
+                // The cooldown time here is longer than the cooldown time we use in NpmController.
+                // This gives the Npm component ample time to build up the npm node tree,
+                // so that we can query it later for perf optimizations.
+                if (_idleNodeModulesTimer != null) {
+                    _idleNodeModulesTimer.Change(3000, Timeout.Infinite);
+                }
+            }
         }
 
         private static string[] _excludedAvailableItems = new[] {
@@ -454,7 +458,10 @@ namespace Microsoft.NodejsTools.Project {
 
         protected override void Reload() {
             using (new DebugTimer("Project Load")) {
-                _intermediateOutputPath = Path.Combine(ProjectHome, GetProjectProperty("BaseIntermediateOutputPath"));
+                // Populate values from project properties before we do anything else.
+                // Otherwise we run into race conditions where, for instance, _analysisIgnoredDirectories
+                // is not properly set before the FileNodes get created in base.Reload()
+                UpdateProjectNodeFromProjectProperties();
 
                 if (_analyzer != null && _analyzer.RemoveUser()) {
                     _analyzer.Dispose();
@@ -473,18 +480,22 @@ namespace Microsoft.NodejsTools.Project {
                 // scan for files which were loaded from cached analysis but no longer
                 // exist and remove them.
                 _analyzer.ReloadComplete();
+            }
+        }
 
-                var ignoredPaths = GetProjectProperty(NodejsConstants.AnalysisIgnoredDirectories);
+        private void UpdateProjectNodeFromProjectProperties() {
+            _intermediateOutputPath = Path.Combine(ProjectHome, GetProjectProperty("BaseIntermediateOutputPath"));
 
-                if (!string.IsNullOrWhiteSpace(ignoredPaths)) {
-                    _analysisIgnoredDirs.Append(ignoredPaths.Split(';').Select(x => '\\' + x + '\\').ToArray());
-                }
+            var ignoredPaths = GetProjectProperty(NodejsConstants.AnalysisIgnoredDirectories);
 
-                var maxFileSizeProp = GetProjectProperty(NodejsConstants.AnalysisMaxFileSize);
-                int maxFileSize;
-                if (maxFileSizeProp != null && Int32.TryParse(maxFileSizeProp, out maxFileSize)) {
-                    _maxFileSize = maxFileSize;
-                }
+            if (!string.IsNullOrWhiteSpace(ignoredPaths)) {
+                _analysisIgnoredDirs = _analysisIgnoredDirs.Append(ignoredPaths.Split(';').Select(x => '\\' + x + '\\').ToArray());
+            }
+
+            var maxFileSizeProp = GetProjectProperty(NodejsConstants.AnalysisMaxFileSize);
+            int maxFileSize;
+            if (maxFileSizeProp != null && Int32.TryParse(maxFileSizeProp, out maxFileSize)) {
+                _maxFileSize = maxFileSize;
             }
         }
 
@@ -965,8 +976,19 @@ namespace Microsoft.NodejsTools.Project {
                     if (_analyzer.RemoveUser()) {
                         _analyzer.Dispose();
                     }
-
                     _analyzer = null;
+                }
+
+                lock (_idleNodeModulesLock) {
+                    if (_idleNodeModulesTimer != null) {
+                        _idleNodeModulesTimer.Dispose();
+                    }
+                    _idleNodeModulesTimer = null;
+
+                    // Unsubscribe event handlers that trigger _idleNodeModulesTimer.
+                    _nodeModulesWatcher.Changed -= OnNodeModulesWatcherChanged;
+                    _nodeModulesWatcher.Created -= OnNodeModulesWatcherChanged;
+                    _nodeModulesWatcher.Deleted -= OnNodeModulesWatcherChanged;
                 }
 
                 NodejsPackage.Instance.IntellisenseOptionsPage.SaveToDiskChanged -= IntellisenseOptionsPageSaveToDiskChanged;
